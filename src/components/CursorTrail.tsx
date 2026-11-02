@@ -94,7 +94,7 @@ export function CursorTrail({ color = DEFAULT_THEME_COLOR }: Props) {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[60] hidden touch-none md:block"
+      className="pointer-events-none fixed inset-0 z-60 hidden touch-none md:block"
     />
   );
 }
