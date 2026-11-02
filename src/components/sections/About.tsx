@@ -23,7 +23,9 @@ export function About({ title, about, profile }: Props) {
               width={416}
               height={416}
               sizes="(min-width: 640px) 208px, 224px"
-              className="aspect-square w-full object-cover grayscale-[35%] transition duration-300 hover:grayscale-0"
+              className="aspect-square w-full object-cover grayscale-35 transition duration-300 hover:grayscale-0"
+              loading="eager"
+              fetchPriority="high"
             />
           </div>
           <figcaption className="label mt-3 text-center">Fig. 01a — The engineer</figcaption>
