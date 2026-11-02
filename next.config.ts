@@ -24,6 +24,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     formats: ["image/avif", "image/webp"],
+    // Bundled fallback photo + uploads served from GridFS by /media/[id].
+    localPatterns: [
+      { pathname: "/souvik.webp", search: "" },
+      { pathname: "/media/**", search: "" },
+    ],
+  },
+  experimental: {
+    // Photo (2 MB) and resume (5 MB) uploads go through a Server Action.
+    serverActions: { bodySizeLimit: "6mb" },
   },
   turbopack: {
     rules: {

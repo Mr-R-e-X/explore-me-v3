@@ -1,17 +1,17 @@
 import { ArrowDownRight, FileText, MapPin } from "lucide-react";
-import { experience } from "@/content/experience";
-import { profile } from "@/content/profile";
+import { resumeUrl } from "@/lib/content/helpers";
+import type { Job, SiteContent } from "@/lib/content/schema";
 import { ScrollSpyNav } from "@/components/layout/ScrollSpyNav";
 import { Socials } from "@/components/layout/Socials";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
-// Evaluated at build time; the page is static, so this refreshes on each deploy.
-const years = Math.floor(
-  (Date.now() - new Date(profile.careerStart).getTime()) / (365.25 * 24 * 60 * 60 * 1000),
-);
+type Props = {
+  profile: SiteContent["profile"];
+  years: number;
+  current: Job | undefined;
+};
 
-export function Intro() {
-  const current = experience[0];
+export function Intro({ profile, years, current }: Props) {
   return (
     <div className="flex flex-col pt-14 no-scrollbar lg:sticky lg:top-0 lg:h-dvh lg:justify-between lg:overflow-y-auto lg:py-12">
       <div>
@@ -37,18 +37,24 @@ export function Intro() {
             <span className="text-xs text-muted">years of experience</span>
           </p>
           <span aria-hidden="true" className="h-10 w-px bg-line" />
-          <p className="text-sm leading-relaxed text-muted">
-            Currently {current.role} at{" "}
-            <a
-              href={current.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-ink underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
-            >
-              {current.company}
-            </a>
-            .
-          </p>
+          {current && (
+            <p className="text-sm leading-relaxed text-muted">
+              Currently {current.role} at{" "}
+              {current.url ? (
+                <a
+                  href={current.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ink underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                >
+                  {current.company}
+                </a>
+              ) : (
+                <span className="text-ink">{current.company}</span>
+              )}
+              .
+            </p>
+          )}
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -60,7 +66,7 @@ export function Intro() {
             <ArrowDownRight className="size-4" aria-hidden="true" />
           </a>
           <a
-            href={profile.resume}
+            href={resumeUrl(profile)}
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-medium transition-colors hover:border-accent hover:text-accent-ink"
           >
             <FileText className="size-4" aria-hidden="true" />
@@ -72,7 +78,7 @@ export function Intro() {
       </div>
 
       <div className="mt-8 hidden items-center gap-3 lg:flex">
-        <Socials />
+        <Socials profile={profile} />
         <span aria-hidden="true" className="h-5 w-px bg-line" />
         <ThemeToggle />
       </div>

@@ -1,15 +1,17 @@
 import { Mail } from "lucide-react";
-import { profile } from "@/content/profile";
+import type { SiteContent } from "@/lib/content/schema";
 import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/ui/Icons";
 
-const links = [
-  { href: profile.social.github, label: "GitHub", Icon: GitHubIcon },
-  { href: profile.social.linkedin, label: "LinkedIn", Icon: LinkedInIcon },
-  { href: profile.social.x, label: "X (Twitter)", Icon: XIcon },
-  { href: `mailto:${profile.email}`, label: "Email", Icon: Mail },
-];
+type Props = { profile: SiteContent["profile"]; className?: string };
 
-export function Socials({ className = "" }: { className?: string }) {
+export function Socials({ profile, className = "" }: Props) {
+  const links = [
+    { href: profile.social.github, label: "GitHub", Icon: GitHubIcon },
+    { href: profile.social.linkedin, label: "LinkedIn", Icon: LinkedInIcon },
+    { href: profile.social.x, label: "X (Twitter)", Icon: XIcon },
+    { href: `mailto:${profile.email}`, label: "Email", Icon: Mail },
+  ].filter((l) => l.href && l.href !== "mailto:");
+
   return (
     <ul className={`flex items-center gap-1 ${className}`} aria-label="Social links">
       {links.map(({ href, label, Icon }) => (

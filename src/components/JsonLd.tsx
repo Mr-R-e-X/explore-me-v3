@@ -1,27 +1,27 @@
-import { experience } from "@/content/experience";
-import { profile, siteUrl } from "@/content/profile";
-import { skillGroups } from "@/content/skills";
+import { photoUrl, siteUrl } from "@/lib/content/helpers";
+import type { SiteContent } from "@/lib/content/schema";
 
-export function JsonLd() {
+export function JsonLd({ content }: { content: SiteContent }) {
+  const { profile, experience, skills, seo } = content;
+  const current = experience[0];
   const person = {
     "@type": "Person",
     "@id": `${siteUrl}/#person`,
     name: profile.name,
     url: siteUrl,
-    image: `${siteUrl}${profile.photo}`,
+    image: `${siteUrl}${photoUrl(profile)}`,
     email: `mailto:${profile.email}`,
     jobTitle: profile.role,
-    description: profile.description,
-    worksFor: { "@type": "Organization", name: experience[0].company, url: experience[0].url },
-    alumniOf: { "@type": "CollegeOrUniversity", name: profile.education.school },
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Dehradun",
-      addressRegion: "Uttarakhand",
-      addressCountry: "IN",
-    },
-    knowsAbout: skillGroups.flatMap((g) => g.items),
-    sameAs: Object.values(profile.social),
+    description: seo.description,
+    ...(current && {
+      worksFor: { "@type": "Organization", name: current.company, ...(current.url && { url: current.url }) },
+    }),
+    ...(profile.education.school && {
+      alumniOf: { "@type": "CollegeOrUniversity", name: profile.education.school },
+    }),
+    address: { "@type": "PostalAddress", addressLocality: profile.location },
+    knowsAbout: skills.flatMap((g) => g.items),
+    sameAs: Object.values(profile.social).filter(Boolean),
   };
 
   const data = {
@@ -32,7 +32,7 @@ export function JsonLd() {
         "@type": "ProfilePage",
         "@id": `${siteUrl}/#profilepage`,
         url: siteUrl,
-        name: `${profile.name} — ${profile.role}`,
+        name: seo.title,
         mainEntity: { "@id": `${siteUrl}/#person` },
         inLanguage: "en",
       },

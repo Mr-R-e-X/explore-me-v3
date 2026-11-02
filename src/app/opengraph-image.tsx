@@ -1,11 +1,13 @@
 import { ImageResponse } from "next/og";
-import { profile } from "@/content/profile";
+import { defaultContent } from "@/lib/content/defaults";
+import { getContent } from "@/lib/content/get-content";
 
-export const alt = `${profile.name} — ${profile.role}`;
+export const alt = defaultContent.seo.title;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const { profile, about } = (await getContent()).content;
   const grid = "rgba(15,18,34,0.06)";
   return new ImageResponse(
     (
@@ -35,7 +37,7 @@ export default function OpengraphImage() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 16, fontSize: 24, color: "#4f3fe0" }}>
-          {["TypeScript", "Node.js", "NestJS", "Next.js", "PostgreSQL", "RAG / Agents"].map((t) => (
+          {about.recentTech.slice(0, 6).map((t) => (
             <span
               key={t}
               style={{ padding: "8px 18px", border: "1px solid #cfd0da", borderRadius: 999, background: "#eeebff" }}

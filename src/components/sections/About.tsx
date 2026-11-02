@@ -1,47 +1,25 @@
 import Image from "next/image";
-import { profile } from "@/content/profile";
+import { parseHighlights, photoUrl } from "@/lib/content/helpers";
+import type { SiteContent } from "@/lib/content/schema";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-const recent = ["TypeScript", "NestJS", "Hono", "Next.js", "PostgreSQL", "Redis", "Docker", "Pi"];
+type Props = {
+  title: string;
+  about: SiteContent["about"];
+  profile: SiteContent["profile"];
+};
 
-export function About() {
+export function About({ title, about, profile }: Props) {
   return (
     <section id="about" aria-labelledby="about-title" className="reveal">
-      <SectionHeading id="about-title" index="01" title="About" fig="Fig. 01 · Profile" />
-      <div className="grid gap-10 sm:grid-cols-[1fr_auto]">
-        <div className="space-y-4 leading-relaxed text-muted">
-          <p>
-            Hi, I&apos;m Souvik — a software engineer who likes owning a feature from the
-            whiteboard to the pager. I started out teaching full-stack development at{" "}
-            <span className="text-ink">Coding Ninjas</span>, where explaining other people&apos;s bugs
-            turned out to be the best way to learn systems deeply.
-          </p>
-          <p>
-            Since then I&apos;ve built payment rails processing tens of thousands of transactions a
-            month at <span className="text-ink">Edviron</span>, government-scale citizen workflows at{" "}
-            <span className="text-ink">Prodios Labs</span>, and a production e-commerce platform as a
-            freelancer — schema, APIs, security, deployment and observability included.
-          </p>
-          <p>
-            These days I&apos;m most excited about LLM applications that actually ship: retrieval,
-            tool-calling agents, and the boring infrastructure that makes them reliable.
-          </p>
-          <p className="pt-2 text-sm text-ink">A few technologies I&apos;ve been working with lately:</p>
-          <ul className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-sm">
-            {recent.map((t) => (
-              <li key={t} className="flex items-center gap-2">
-                <span aria-hidden="true" className="text-accent">▹</span>
-                {t}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <figure className="mx-auto w-56 sm:w-52">
+      <SectionHeading id="about-title" index="01" title={title} fig="Fig. 01 · Profile" />
+      {/* Photo floats right so the text wraps underneath it instead of leaving a gap. */}
+      <div className="flow-root leading-relaxed text-muted">
+        <figure className="mx-auto mb-8 w-56 sm:float-right sm:mb-4 sm:ml-8 sm:w-52">
           <div className="bp-frame p-2">
             <Image
-              src={profile.photo}
-              alt="Portrait of Souvik Hazra"
+              src={photoUrl(profile)}
+              alt={profile.photo.alt}
               width={416}
               height={416}
               sizes="(min-width: 640px) 208px, 224px"
@@ -50,6 +28,33 @@ export function About() {
           </div>
           <figcaption className="label mt-3 text-center">Fig. 01a — The engineer</figcaption>
         </figure>
+
+        {about.paragraphs.map((para, i) => (
+          <p key={i} className="mb-4">
+            {parseHighlights(para).map((seg, j) =>
+              seg.highlight ? (
+                <span key={j} className="text-ink">
+                  {seg.text}
+                </span>
+              ) : (
+                seg.text
+              ),
+            )}
+          </p>
+        ))}
+        {about.recentTech.length > 0 && (
+          <>
+            <p className="mb-4 pt-2 text-sm text-ink">{about.recentTitle}</p>
+            <ul className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-sm sm:grid-cols-3">
+              {about.recentTech.map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <span aria-hidden="true" className="text-accent">▹</span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </section>
   );

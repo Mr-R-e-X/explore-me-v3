@@ -1,11 +1,11 @@
 import { ArrowUpRight } from "lucide-react";
-import { experience } from "@/content/experience";
+import type { Job } from "@/lib/content/schema";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Tags } from "@/components/ui/Tags";
 import { ExperienceTabs } from "./ExperienceTabs";
 
-export function Experience() {
-  const panels = experience.map((job) => (
+export function Experience({ title, jobs }: { title: string; jobs: Job[] }) {
+  const panels = jobs.map((job) => (
     <article key={job.id}>
       <h3 className="text-lg font-semibold tracking-tight sm:text-xl">
         {job.role}{" "}
@@ -47,9 +47,9 @@ export function Experience() {
 
   return (
     <section id="experience" aria-labelledby="experience-title" className="reveal">
-      <SectionHeading id="experience-title" index="02" title="Where I’ve worked" fig="Fig. 02 · Timeline" />
+      <SectionHeading id="experience-title" index="02" title={title} fig="Fig. 02 · Timeline" />
       <ExperienceTabs
-        tabs={experience.map((j) => ({ id: j.id, label: j.company }))}
+        tabs={jobs.map((j) => ({ id: j.id, label: j.company }))}
         panels={panels}
       />
     </section>

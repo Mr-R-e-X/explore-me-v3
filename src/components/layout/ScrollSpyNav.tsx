@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { navItems } from "@/content/profile";
+import { navItems } from "@/lib/content/helpers";
 
 export function ScrollSpyNav() {
   const [active, setActive] = useState<string>("");

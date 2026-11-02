@@ -1,26 +1,34 @@
 import { Award, ArrowUpRight } from "lucide-react";
-import { projects, workProjects } from "@/content/projects";
+import type { Project, SiteContent, WorkProject } from "@/lib/content/schema";
 import { AgentsFigure, PcFigure } from "@/components/ui/Figures";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Tags } from "@/components/ui/Tags";
 
-const figures = { agents: AgentsFigure, pc: PcFigure };
+const figures = { agents: AgentsFigure, pc: PcFigure, none: null };
 
-export function Projects() {
+type Props = {
+  sections: SiteContent["sections"];
+  projects: Project[];
+  workProjects: WorkProject[];
+};
+
+export function Projects({ sections, projects, workProjects }: Props) {
   return (
     <section id="projects" aria-labelledby="projects-title" className="reveal">
-      <SectionHeading id="projects-title" index="03" title="Things I’ve built" fig="Fig. 03 · Selected work" />
+      <SectionHeading id="projects-title" index="03" title={sections.projects} fig="Fig. 03 · Selected work" />
       <div className="space-y-8">
         {projects.map((p, i) => {
           const Figure = figures[p.figure];
           return (
             <article key={p.id} className="bp-frame flex flex-col">
-              <div className="relative flex h-60 items-center justify-center border-b border-dashed border-line px-5 pb-5 pt-10 sm:h-72">
-                <p className="label absolute left-5 top-4 sm:left-7">
-                  Fig. 03{String.fromCharCode(97 + i)} — {p.title}
-                </p>
-                <Figure className="h-full w-auto max-w-full" />
-              </div>
+              {Figure && (
+                <div className="relative flex h-60 items-center justify-center border-b border-dashed border-line px-5 pb-5 pt-10 sm:h-72">
+                  <p className="label absolute left-5 top-4 sm:left-7">
+                    Fig. 03{String.fromCharCode(97 + i)} — {p.title}
+                  </p>
+                  <Figure className="h-full w-auto max-w-full" />
+                </div>
+              )}
               <div className="p-5 sm:p-7">
                 <p className="label">
                   Project 0{i + 1} · {p.kicker}
@@ -48,7 +56,7 @@ export function Projects() {
                   <div className="mt-5 flex flex-wrap gap-4">
                     {p.links.map((l) => (
                       <a
-                        key={l.href}
+                        key={l.id}
                         href={l.href}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -66,39 +74,43 @@ export function Projects() {
         })}
       </div>
 
-      <h3 className="label mt-16 flex items-center gap-3">
-        <span>Production work at Prodios Labs</span>
-        <span aria-hidden="true" className="h-px flex-1 bg-line" />
-      </h3>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-        {workProjects.map((w) => (
-          <li key={w.id} className="bp-frame flex flex-col p-5">
-            <p className="label">{w.kicker}</p>
-            <h4 className="mt-2 text-lg font-semibold tracking-tight">
-              {w.href ? (
-                <a
-                  href={w.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-accent-ink"
-                >
-                  {w.title}
-                  <ArrowUpRight className="size-4 text-accent-ink" aria-hidden="true" />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </a>
-              ) : (
-                w.title
-              )}
-            </h4>
-            <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{w.summary}</p>
-            <ul aria-label={`${w.title} tech`} className="mt-4 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-muted">
-              {w.stack.map((t) => (
-                <li key={t}>{t}</li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
+      {workProjects.length > 0 && (
+        <>
+          <h3 className="label mt-16 flex items-center gap-3">
+            <span>{sections.workProjects}</span>
+            <span aria-hidden="true" className="h-px flex-1 bg-line" />
+          </h3>
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+            {workProjects.map((w) => (
+              <li key={w.id} className="bp-frame flex flex-col p-5">
+                <p className="label">{w.kicker}</p>
+                <h4 className="mt-2 text-lg font-semibold tracking-tight">
+                  {w.href ? (
+                    <a
+                      href={w.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 hover:text-accent-ink"
+                    >
+                      {w.title}
+                      <ArrowUpRight className="size-4 text-accent-ink" aria-hidden="true" />
+                      <span className="sr-only">(opens in a new tab)</span>
+                    </a>
+                  ) : (
+                    w.title
+                  )}
+                </h4>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{w.summary}</p>
+                <ul aria-label={`${w.title} tech`} className="mt-4 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-muted">
+                  {w.stack.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteUrl } from "@/content/profile";
+import { siteUrl } from "@/lib/content/helpers";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

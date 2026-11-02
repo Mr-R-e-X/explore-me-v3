@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { navItems, profile } from "@/content/profile";
+import { navItems } from "@/lib/content/helpers";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function MobileHeader() {
+export function MobileHeader({ name, resumeHref }: { name: string; resumeHref: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -20,9 +20,9 @@ export function MobileHeader() {
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
         <a href="#top" className="flex min-h-11 items-center gap-2 font-mono text-sm tracking-wider">
           <span className="grid size-7 place-items-center rounded-sm bg-accent text-[11px] font-semibold text-on-accent">
-            SH
+            {initials(name)}
           </span>
-          <span className="sr-only">{profile.name}, back to top</span>
+          <span className="sr-only">{name}, back to top</span>
         </a>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -59,7 +59,7 @@ export function MobileHeader() {
           ))}
         </ol>
         <a
-          href={profile.resume}
+          href={resumeHref}
           className="mt-6 inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-on-accent"
         >
           Download resume
@@ -67,4 +67,13 @@ export function MobileHeader() {
       </nav>
     </header>
   );
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
