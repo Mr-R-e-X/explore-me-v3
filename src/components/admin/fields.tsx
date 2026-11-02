@@ -2,6 +2,7 @@
 
 import { ChevronDown, Copy, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
+import { themeColorPresets } from "@/lib/content/schema";
 import { newId, useField, type Path } from "./editor-context";
 import { SortableList } from "./Sortable";
 
@@ -54,6 +55,84 @@ export function TextField({ path, label, hint, placeholder, type = "text" }: Fie
         aria-describedby={error ? `${id}-error` : undefined}
         className={inputClass}
       />
+    </FieldShell>
+  );
+}
+
+export function ToggleField({ path, label, hint }: FieldProps) {
+  const id = useId();
+  const { value, onChange, error } = useField<boolean>(path);
+  const enabled = Boolean(value);
+
+  return (
+    <FieldShell id={id} label={label} hint={hint} error={error}>
+      <div className="inline-flex rounded-md border border-line-strong p-0.5" role="group" aria-labelledby={id}>
+        <button
+          type="button"
+          aria-pressed={enabled}
+          onClick={() => onChange(true)}
+          className={`rounded px-3 py-1.5 text-xs font-medium transition ${
+            enabled ? "bg-accent text-on-accent" : "text-muted hover:text-ink"
+          }`}
+        >
+          Enabled
+        </button>
+        <button
+          type="button"
+          aria-pressed={!enabled}
+          onClick={() => onChange(false)}
+          className={`rounded px-3 py-1.5 text-xs font-medium transition ${
+            !enabled ? "bg-ink text-paper" : "text-muted hover:text-ink"
+          }`}
+        >
+          Disabled
+        </button>
+      </div>
+    </FieldShell>
+  );
+}
+
+export function ColorField({ path, label, hint }: FieldProps) {
+  const id = useId();
+  const { value, onChange, error } = useField<string>(path);
+  const hex = value?.match(/^#[0-9A-Fa-f]{6}$/) ? value : "#5b4cf0";
+
+  return (
+    <FieldShell id={id} label={label} hint={hint} error={error}>
+      <div className="flex flex-wrap items-center gap-2">
+        {themeColorPresets.map((preset) => {
+          const selected = hex.toLowerCase() === preset.value.toLowerCase();
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              title={preset.label}
+              aria-label={`${preset.label} (${preset.value})`}
+              aria-pressed={selected}
+              onClick={() => onChange(preset.value)}
+              className={`h-8 w-8 rounded-md border-2 transition ${
+                selected ? "border-ink scale-105" : "border-transparent hover:border-line-strong"
+              }`}
+              style={{ backgroundColor: preset.value }}
+            />
+          );
+        })}
+        <label
+          htmlFor={id}
+          className="ml-1 inline-flex items-center gap-2 rounded-md border border-line-strong bg-surface px-2 py-1.5 text-xs text-muted"
+        >
+          <input
+            id={id}
+            type="color"
+            value={hex}
+            onChange={(e) => onChange(e.target.value)}
+            aria-invalid={Boolean(error)}
+            className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
+          />
+          Custom
+        </label>
+        <span className="font-mono text-xs text-muted">{hex}</span>
+      </div>
     </FieldShell>
   );
 }

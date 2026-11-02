@@ -12,14 +12,20 @@ export function getAt(obj: unknown, path: Path): unknown {
 export function setAt<T>(obj: T, path: Path, value: unknown): T {
   if (path.length === 0) return value as T;
   const [key, ...rest] = path;
-  const current = (obj as Record<string | number, unknown>)[key];
+  const base =
+    obj == null
+      ? typeof key === "number"
+        ? []
+        : {}
+      : obj;
+  const current = (base as Record<string | number, unknown>)[key];
   const next = setAt(current, rest, value);
-  if (Array.isArray(obj)) {
-    const copy = obj.slice();
+  if (Array.isArray(base)) {
+    const copy = base.slice();
     copy[key as number] = next;
     return copy as T;
   }
-  return { ...(obj as object), [key]: next } as T;
+  return { ...(base as object), [key]: next } as T;
 }
 
 export const pathKey = (path: Path) => path.join(".");

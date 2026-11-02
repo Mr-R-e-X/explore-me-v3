@@ -21,6 +21,12 @@ export const defaultContent: SiteContent = {
       "Portfolio",
     ],
   },
+  theme: {
+    trailEnabled: true,
+    gridFlowEnabled: true,
+    trailColor: "#5b4cf0",
+    gridFlowColor: "#5b4cf0",
+  },
   profile: {
     name: "Souvik Hazra",
     shortName: "Souvik",

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { Job, Project, SkillGroup, WorkProject } from "@/lib/content/schema";
 import { newId } from "./editor-context";
-import { ObjectList, SelectField, StringList, TextArea, TextField } from "./fields";
+import { ColorField, ObjectList, SelectField, StringList, TextArea, TextField, ToggleField } from "./fields";
 
 export function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
@@ -228,6 +228,29 @@ export function SectionsPanel() {
       <TextArea path={["contact", "body"]} label="Body" rows={3} />
       <h3 className="label pt-2">Footer</h3>
       <TextField path={["footer", "text"]} label="Footer text" />
+      <h3 className="label pt-2">Theme effects</h3>
+      <Grid>
+        <ToggleField
+          path={["theme", "trailEnabled"]}
+          label="Cursor trail"
+          hint="Soft color dots that follow the pointer on desktop."
+        />
+        <ToggleField
+          path={["theme", "gridFlowEnabled"]}
+          label="Grid flow"
+          hint="Color pulses that travel along the background grid lines."
+        />
+      </Grid>
+      <ColorField
+        path={["theme", "trailColor"]}
+        label="Cursor trail color"
+        hint="Desktop only. Pick a preset or a custom color, then publish."
+      />
+      <ColorField
+        path={["theme", "gridFlowColor"]}
+        label="Grid flow color"
+        hint="Color of the pulses on the background grid."
+      />
     </Panel>
   );
 }

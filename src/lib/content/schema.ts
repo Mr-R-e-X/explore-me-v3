@@ -55,12 +55,49 @@ export const mediaRefSchema = z.object({
   fileId: z.string().regex(/^[a-f0-9]{24}$/).nullable(),
 });
 
+/** Brand accent — default for trail + grid flow. */
+export const DEFAULT_THEME_COLOR = "#5b4cf0";
+/** @deprecated Use DEFAULT_THEME_COLOR */
+export const DEFAULT_TRAIL_COLOR = DEFAULT_THEME_COLOR;
+
+export const themeColorPresets = [
+  { id: "brand", label: "Brand", value: DEFAULT_THEME_COLOR },
+  { id: "violet", label: "Violet", value: "#7c3aed" },
+  { id: "teal", label: "Teal", value: "#0d9488" },
+  { id: "rose", label: "Rose", value: "#e11d48" },
+  { id: "amber", label: "Amber", value: "#d97706" },
+  { id: "ink", label: "Ink", value: "#0f1222" },
+] as const;
+
+/** @deprecated Use themeColorPresets */
+export const trailColorPresets = themeColorPresets;
+
+const hexColor = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, "Use a hex color like #5b4cf0")
+  .default(DEFAULT_THEME_COLOR);
+
+const themeDefaults = {
+  trailEnabled: true,
+  gridFlowEnabled: true,
+  trailColor: DEFAULT_THEME_COLOR,
+  gridFlowColor: DEFAULT_THEME_COLOR,
+} as const;
+
 export const siteContentSchema = z.object({
   seo: z.object({
     title: required(120),
     description: required(300),
     keywords: list(30),
   }),
+  theme: z
+    .object({
+      trailEnabled: z.boolean().default(true),
+      gridFlowEnabled: z.boolean().default(true),
+      trailColor: hexColor,
+      gridFlowColor: hexColor,
+    })
+    .default(themeDefaults),
   profile: z.object({
     name: required(80),
     shortName: required(40),

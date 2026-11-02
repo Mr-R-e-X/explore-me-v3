@@ -89,6 +89,8 @@ body {
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size: 24px 24px;
+  /* Keep grid locked to the viewport so GridFlow tracers stay on the lines. */
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
