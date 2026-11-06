@@ -1,7 +1,15 @@
 "use client";
 
 import { ExternalLink, FileText, LogOut, RotateCcw, Upload } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type DragEvent,
+} from "react";
 import {
   discardDraft,
   logout,
@@ -296,15 +304,38 @@ function MediaPanel() {
   );
 }
 
+const MEDIA_ACCEPT = {
+  photo: {
+    types: ["image/webp", "image/png", "image/jpeg", "image/avif"] as const,
+    acceptAttr: "image/webp,image/png,image/jpeg,image/avif",
+    hint: "WebP, PNG, JPEG or AVIF · up to 2 MB · square works best",
+    dropHint: "Drop a photo here, or browse",
+  },
+  resume: {
+    types: ["application/pdf"] as const,
+    acceptAttr: "application/pdf",
+    hint: "PDF · up to 5 MB",
+    dropHint: "Drop a PDF here, or browse",
+  },
+} as const;
+
 function MediaField({ kind }: { kind: "photo" | "resume" }) {
   const id = useField<string | null>(["profile", kind, "fileId"]);
   const filename = useField<string>(["profile", "resume", "filename"]);
   const [error, setError] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const rules = MEDIA_ACCEPT[kind];
   const current = id.value ? `/media/${id.value}` : kind === "photo" ? "/souvik.webp" : "/resume/Souvik_Hazra_SDE.pdf";
 
   function onFile(file: File | undefined) {
     if (!file) return;
+    if (!(rules.types as readonly string[]).includes(file.type)) {
+      setError(kind === "photo" ? "Use a WebP, PNG, JPEG, or AVIF image." : "Use a PDF file.");
+      return;
+    }
     setError(null);
     const fd = new FormData();
     fd.set("kind", kind);
@@ -317,37 +348,97 @@ function MediaField({ kind }: { kind: "photo" | "resume" }) {
     });
   }
 
+  function onDragEnter(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth.current += 1;
+    if (e.dataTransfer.types.includes("Files")) setDragging(true);
+  }
+  function onDragLeave(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth.current -= 1;
+    if (dragDepth.current <= 0) {
+      dragDepth.current = 0;
+      setDragging(false);
+    }
+  }
+  function onDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+  }
+  function onDrop(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth.current = 0;
+    setDragging(false);
+    if (busy) return;
+    onFile(e.dataTransfer.files?.[0]);
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-5 rounded-lg border border-line p-4">
+    <div
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      aria-busy={busy}
+      className={`flex flex-wrap items-center gap-5 rounded-lg border border-dashed p-4 transition-colors ${
+        dragging
+          ? "border-accent bg-accent-soft"
+          : "border-line bg-transparent hover:border-line-strong"
+      }`}
+    >
       {kind === "photo" ? (
         // eslint-disable-next-line @next/next/no-img-element -- admin preview of the raw upload
         <img src={current} alt="" className="size-24 rounded object-cover" />
       ) : (
-        <a href={current} target="_blank" rel="noreferrer" className="flex size-24 flex-col items-center justify-center gap-1 rounded bg-accent-soft text-accent-ink">
+        <a
+          href={current}
+          target="_blank"
+          rel="noreferrer"
+          className="flex size-24 flex-col items-center justify-center gap-1 rounded bg-accent-soft text-accent-ink"
+        >
           <FileText className="size-8" aria-hidden="true" />
           <span className="text-xs">Open</span>
         </a>
       )}
-      <div className="space-y-2">
+      <div className="min-w-0 flex-1 space-y-2">
         <p className="text-sm font-medium">{kind === "photo" ? "Profile photo" : "Resume PDF"}</p>
         <p className="text-xs text-muted">
-          {kind === "photo" ? "WebP, PNG, JPEG or AVIF · up to 2 MB · square works best" : `PDF · up to 5 MB · ${filename.value}`}
+          {dragging
+            ? rules.dropHint
+            : kind === "resume"
+              ? `${rules.hint} · ${filename.value}`
+              : rules.hint}
         </p>
-        <label className={`${btn.secondary} cursor-pointer`}>
-          <Upload className="size-4" aria-hidden="true" />
-          {busy ? "Uploading…" : "Upload new"}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+            className={btn.secondary}
+          >
+            <Upload className="size-4" aria-hidden="true" />
+            {busy ? "Uploading…" : dragging ? "Drop to upload" : "Upload new"}
+          </button>
           <input
+            ref={inputRef}
             type="file"
             className="sr-only"
-            accept={kind === "photo" ? "image/webp,image/png,image/jpeg,image/avif" : "application/pdf"}
-            onChange={(e) => onFile(e.target.files?.[0])}
+            accept={rules.acceptAttr}
+            onChange={(e) => {
+              onFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
           />
-        </label>
-        {id.value && (
-          <button type="button" onClick={() => id.onChange(null)} className={`${btn.ghost} ml-2`}>
-            Use default file
-          </button>
-        )}
+          {id.value && (
+            <button type="button" onClick={() => id.onChange(null)} className={btn.ghost}>
+              Use default file
+            </button>
+          )}
+        </div>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
     </div>
