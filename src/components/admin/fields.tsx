@@ -3,6 +3,7 @@
 import { ChevronDown, Copy, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { themeColorPresets } from "@/lib/content/schema";
+import { useConfirm } from "./AlertDialog";
 import { newId, useField, type Path } from "./editor-context";
 import { SortableList } from "./Sortable";
 
@@ -285,6 +286,7 @@ export function ObjectList<T extends { id: string }>({
   children: (index: number) => ReactNode;
   addLabel?: string;
 }) {
+  const confirm = useConfirm();
   const { value = [], onChange } = useField<T[]>(path);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -328,10 +330,15 @@ export function ObjectList<T extends { id: string }>({
                   type="button"
                   aria-label="Delete"
                   className={iconButton}
-                  onClick={() => {
-                    if (confirm(`Delete "${itemTitle(item) || "this item"}"?`)) {
-                      onChange(value.filter((_, j) => j !== i));
-                    }
+                  onClick={async () => {
+                    const name = itemTitle(item) || "this item";
+                    const ok = await confirm({
+                      title: `Delete “${name}”?`,
+                      description: "This removes the item from the draft. Save or publish to keep the change.",
+                      confirmLabel: "Delete",
+                      tone: "danger",
+                    });
+                    if (ok) onChange(value.filter((_, j) => j !== i));
                   }}
                 >
                   <Trash2 className="size-4" aria-hidden="true" />

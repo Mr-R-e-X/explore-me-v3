@@ -51,8 +51,9 @@ export const skillGroupSchema = z.object({
   items: list(30),
 });
 
+/** HTTPS URL to Cloudinary (or null to use the bundled default file). */
 export const mediaRefSchema = z.object({
-  fileId: z.string().regex(/^[a-f0-9]{24}$/).nullable(),
+  url: z.url().nullable(),
 });
 
 /** Brand accent — default for trail + grid flow. */

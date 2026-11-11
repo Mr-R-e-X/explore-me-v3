@@ -1,13 +1,13 @@
 "use server";
 
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
 import { updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession, destroySession, requireSession } from "@/lib/auth/session";
+import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary";
 import {
+  deleteRevision as removeRevision,
   getAdminState,
   publishContent,
   readRevision,
@@ -99,6 +99,15 @@ export async function restoreRevision(id: string): Promise<Result<AdminState>> {
   return { ok: true, data: await getAdminState() };
 }
 
+/** Deletes a history snapshot. The live published version cannot be removed. */
+export async function deleteRevision(id: string): Promise<Result<AdminState>> {
+  await requireSession();
+  const result = await removeRevision(id);
+  if (result === "not_found") return fail("Revision not found.");
+  if (result === "live") return fail("Cannot delete the live published version. Publish a new version first.");
+  return { ok: true, data: await getAdminState() };
+}
+
 // ---------- media ----------
 
 const MEDIA_RULES = {
@@ -106,8 +115,10 @@ const MEDIA_RULES = {
   resume: { types: ["application/pdf"], maxBytes: 5 * 1024 * 1024 },
 } as const;
 
-export async function uploadMedia(formData: FormData): Promise<Result<{ fileId: string; filename: string }>> {
+export async function uploadMedia(formData: FormData): Promise<Result<{ url: string; filename: string }>> {
   await requireSession();
+  if (!isCloudinaryConfigured()) return fail("Cloudinary is not configured.");
+
   const kind = formData.get("kind");
   const file = formData.get("file");
   if ((kind !== "photo" && kind !== "resume") || !(file instanceof File)) return fail("Invalid upload.");
@@ -118,10 +129,15 @@ export async function uploadMedia(formData: FormData): Promise<Result<{ fileId: 
   }
   if (file.size > rules.maxBytes) return fail(`File is larger than ${rules.maxBytes / 1024 / 1024} MB.`);
 
-  const { media } = await collections();
   const filename = file.name.replace(/[^\w.\- ]+/g, "_").slice(0, 120) || kind;
-  const upload = media.openUploadStream(filename, { metadata: { contentType: file.type, kind } });
-  await pipeline(Readable.fromWeb(file.stream() as import("node:stream/web").ReadableStream), upload);
-
-  return { ok: true, data: { fileId: upload.id.toHexString(), filename } };
+  try {
+    const uploaded = await uploadToCloudinary({
+      kind,
+      buffer: Buffer.from(await file.arrayBuffer()),
+    });
+    return { ok: true, data: { url: uploaded.url, filename } };
+  } catch (err) {
+    console.error("[uploadMedia]", err);
+    return fail(err instanceof Error ? err.message : "Upload failed.");
+  }
 }

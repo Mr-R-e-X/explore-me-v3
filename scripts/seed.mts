@@ -1,9 +1,8 @@
-// Seeds MongoDB with the built-in default content (only if nothing is published yet)
-// and uploads the bundled photo and resume into GridFS.
+// Seeds MongoDB with the built-in default content (only if nothing is published yet).
+// Media files are served from /public by default; upload replacements via admin → Cloudinary.
+// Also drops any leftover GridFS media.* collections from the previous storage approach.
 // Usage: pnpm seed   (reads MONGODB_URI / MONGODB_DB from .env.local)
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { GridFSBucket, MongoClient } from "mongodb";
+import { MongoClient } from "mongodb";
 import { defaultContent } from "../src/lib/content/defaults";
 import { siteContentSchema } from "../src/lib/content/schema";
 
@@ -19,33 +18,23 @@ try {
   const db = client.db(process.env.MONGODB_DB || "portfolio");
   const site = db.collection<{ _id: string; data: unknown; version: number; updatedAt: Date }>("site");
 
+  // Best-effort cleanup of legacy GridFS uploads (now hosted on Cloudinary).
+  const dropped = await Promise.allSettled([
+    db.dropCollection("media.files"),
+    db.dropCollection("media.chunks"),
+  ]);
+  if (dropped.some((r) => r.status === "fulfilled")) {
+    console.log("Dropped legacy GridFS media collections.");
+  }
+
   if (await site.findOne({ _id: "published" })) {
-    console.log("Published content already exists — nothing to do.");
+    console.log("Published content already exists — nothing to seed.");
   } else {
-    const media = new GridFSBucket(db, { bucketName: "media" });
-    const upload = async (file: string, filename: string, contentType: string, kind: string) => {
-      const stream = media.openUploadStream(filename, { metadata: { contentType, kind } });
-      stream.end(await readFile(join(process.cwd(), "public", file)));
-      await new Promise((resolve, reject) => stream.on("finish", resolve).on("error", reject));
-      return stream.id.toHexString();
-    };
-
-    const data = siteContentSchema.parse({
-      ...defaultContent,
-      profile: {
-        ...defaultContent.profile,
-        photo: { ...defaultContent.profile.photo, fileId: await upload("souvik.webp", "souvik.webp", "image/webp", "photo") },
-        resume: {
-          ...defaultContent.profile.resume,
-          fileId: await upload("resume/Souvik_Hazra_SDE.pdf", defaultContent.profile.resume.filename, "application/pdf", "resume"),
-        },
-      },
-    });
-
+    const data = siteContentSchema.parse(defaultContent);
     const now = new Date();
     await site.insertOne({ _id: "published", data, version: 1, updatedAt: now });
     await db.collection("revisions").insertOne({ data, version: 1, publishedAt: now });
-    console.log("Seeded published content (v1) with photo and resume.");
+    console.log("Seeded published content (v1). Photo/resume use bundled /public defaults until uploaded.");
   }
 } finally {
   await client.close();

@@ -1,4 +1,4 @@
-import { photoUrl, siteUrl } from "@/lib/content/helpers";
+import { absoluteUrl, photoUrl, siteUrl } from "@/lib/content/helpers";
 import type { SiteContent } from "@/lib/content/schema";
 
 export function JsonLd({ content }: { content: SiteContent }) {
@@ -9,7 +9,7 @@ export function JsonLd({ content }: { content: SiteContent }) {
     "@id": `${siteUrl}/#person`,
     name: profile.name,
     url: siteUrl,
-    image: `${siteUrl}${photoUrl(profile)}`,
+    image: absoluteUrl(photoUrl(profile)),
     email: `mailto:${profile.email}`,
     jobTitle: profile.role,
     description: seo.description,

@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken, verifySessionToken } from "./token";
 
 export async function createSession() {
@@ -19,6 +20,9 @@ export async function destroySession() {
 }
 
 export async function isAuthenticated() {
+  // jose's jwtVerify compares exp to Date.now(); wait for a real request so
+  // Cache Components doesn't treat that as unstable during prerender.
+  await connection();
   return verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
 }
 

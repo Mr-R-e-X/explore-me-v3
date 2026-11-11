@@ -47,8 +47,8 @@ export const defaultContent: SiteContent = {
       school: "Dream Institute of Technology",
       year: "2022",
     },
-    photo: { fileId: null, alt: "Portrait of Souvik Hazra" },
-    resume: { fileId: null, filename: "Souvik_Hazra_SDE.pdf" },
+    photo: { url: null, alt: "Portrait of Souvik Hazra" },
+    resume: { url: null, filename: "Souvik_Hazra_SDE.pdf" },
   },
   sections: {
     about: "About",

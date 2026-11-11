@@ -84,3 +84,18 @@ export async function readRevision(id: string) {
   const parsed = rev ? siteContentSchema.safeParse(rev.data) : null;
   return parsed?.success ? parsed.data : null;
 }
+
+/** Removes a history snapshot. Refuses to delete the revision that matches the live published version. */
+export async function deleteRevision(id: string): Promise<"ok" | "not_found" | "live"> {
+  if (!ObjectId.isValid(id)) return "not_found";
+  const { site, revisions } = await collections();
+  const _id = new ObjectId(id);
+  const rev = await revisions.findOne({ _id }, { projection: { version: 1 } });
+  if (!rev) return "not_found";
+
+  const published = await site.findOne({ _id: "published" }, { projection: { version: 1 } });
+  if (published && rev.version === published.version) return "live";
+
+  const result = await revisions.deleteOne({ _id });
+  return result.deletedCount ? "ok" : "not_found";
+}

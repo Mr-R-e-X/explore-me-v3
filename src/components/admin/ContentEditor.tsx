@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, FileText, LogOut, RotateCcw, Upload } from "lucide-react";
+import { ExternalLink, FileText, LogOut, RotateCcw, Trash2, Upload } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -11,6 +11,7 @@ import {
   type DragEvent,
 } from "react";
 import {
+  deleteRevision,
   discardDraft,
   logout,
   publish,
@@ -21,6 +22,7 @@ import {
 } from "@/app/admin/actions";
 import type { AdminState } from "@/lib/content/admin";
 import { siteContentSchema, type SiteContent } from "@/lib/content/schema";
+import { ConfirmProvider, useConfirm } from "./AlertDialog";
 import { EditorContext, pathKey, setAt, useField, type Path } from "./editor-context";
 import { TextField } from "./fields";
 import {
@@ -62,6 +64,15 @@ const fmt = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
 
 export function ContentEditor({ initial }: { initial: AdminState }) {
+  return (
+    <ConfirmProvider>
+      <ContentEditorApp initial={initial} />
+    </ConfirmProvider>
+  );
+}
+
+function ContentEditorApp({ initial }: { initial: AdminState }) {
+  const confirm = useConfirm();
   const [state, setState] = useState(initial);
   const [content, setContent] = useState(initial.content);
   const [dirty, setDirty] = useState(false);
@@ -118,10 +129,14 @@ export function ContentEditor({ initial }: { initial: AdminState }) {
     const ok = dirty || !state.hasDraft ? await onSave() : true;
     if (ok) window.open("/api/admin/preview", "_blank", "noopener");
   };
-  const onDiscard = () => {
-    if (confirm("Discard the draft and go back to the published content?")) {
-      run(() => discardDraft(), "Draft discarded.", { remount: true });
-    }
+  const onDiscard = async () => {
+    const ok = await confirm({
+      title: "Discard draft?",
+      description: "Go back to the published content. Unsaved draft changes will be lost.",
+      confirmLabel: "Discard",
+      tone: "danger",
+    });
+    if (ok) run(() => discardDraft(), "Draft discarded.", { remount: true });
   };
 
   // Ctrl/Cmd+S saves the draft; warn before leaving with unsaved edits.
@@ -231,6 +246,7 @@ export function ContentEditor({ initial }: { initial: AdminState }) {
                     remount: true,
                   })
                 }
+                onDelete={(id) => run(() => deleteRevision(id), "Version deleted.")}
               />
             )}
           </main>
@@ -253,41 +269,74 @@ function HistoryPanel({
   state,
   pending,
   onRestore,
+  onDelete,
 }: {
   state: AdminState;
   pending: boolean;
   onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
+  const confirm = useConfirm();
+
   return (
     <Panel
       title="History"
-      description="Every publish is kept (latest 50). Restoring loads a version into the draft; publish to make it live."
+      description="Every publish is kept (latest 50). Restoring loads a version into the draft; publish to make it live. The live version can’t be deleted."
     >
       {state.revisions.length === 0 ? (
         <p className="text-sm text-muted">Nothing published yet.</p>
       ) : (
         <ol className="divide-y divide-line rounded-lg border border-line">
-          {state.revisions.map((r, i) => (
-            <li key={r.id} className="flex items-center justify-between gap-4 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">
-                  Version {r.version}
-                  {i === 0 && <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent-ink">live</span>}
-                </p>
-                <p className="text-xs text-muted">{fmt(r.publishedAt)}</p>
-              </div>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  if (confirm(`Load version ${r.version} into the draft? Unsaved edits will be lost.`)) onRestore(r.id);
-                }}
-                className={btn.secondary}
-              >
-                <RotateCcw className="size-4" aria-hidden="true" /> Restore
-              </button>
-            </li>
-          ))}
+          {state.revisions.map((r) => {
+            const isLive = r.version === state.publishedVersion;
+            return (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">
+                    Version {r.version}
+                    {isLive && (
+                      <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent-ink">live</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted">{fmt(r.publishedAt)}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Restore version ${r.version}?`,
+                        description: "Loads this version into the draft. Unsaved edits will be lost.",
+                        confirmLabel: "Restore",
+                      });
+                      if (ok) onRestore(r.id);
+                    }}
+                    className={btn.secondary}
+                  >
+                    <RotateCcw className="size-4" aria-hidden="true" /> Restore
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending || isLive}
+                    title={isLive ? "Publish a newer version before deleting this one" : `Delete version ${r.version}`}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Delete version ${r.version}?`,
+                        description: "Permanently removes this snapshot from history. This cannot be undone.",
+                        confirmLabel: "Delete",
+                        tone: "danger",
+                      });
+                      if (ok) onDelete(r.id);
+                    }}
+                    className={`${btn.ghost} gap-2 text-red-600 hover:text-red-700 disabled:opacity-40 dark:text-red-400 dark:hover:text-red-300`}
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" /> Delete
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       )}
     </Panel>
@@ -296,7 +345,7 @@ function HistoryPanel({
 
 function MediaPanel() {
   return (
-    <Panel title="Photo & resume" description="Files are stored in MongoDB. Upload, then save and publish.">
+    <Panel title="Photo & resume" description="Files upload to Cloudinary; only the URL is saved in MongoDB. Upload, then save and publish.">
       <MediaField kind="photo" />
       <TextField path={["profile", "photo", "alt"]} label="Photo alt text" />
       <MediaField kind="resume" />
@@ -320,7 +369,7 @@ const MEDIA_ACCEPT = {
 } as const;
 
 function MediaField({ kind }: { kind: "photo" | "resume" }) {
-  const id = useField<string | null>(["profile", kind, "fileId"]);
+  const url = useField<string | null>(["profile", kind, "url"]);
   const filename = useField<string>(["profile", "resume", "filename"]);
   const [error, setError] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
@@ -328,7 +377,7 @@ function MediaField({ kind }: { kind: "photo" | "resume" }) {
   const dragDepth = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const rules = MEDIA_ACCEPT[kind];
-  const current = id.value ? `/media/${id.value}` : kind === "photo" ? "/souvik.webp" : "/resume/Souvik_Hazra_SDE.pdf";
+  const current = url.value ?? (kind === "photo" ? "/souvik.webp" : "/resume/Souvik_Hazra_SDE.pdf");
 
   function onFile(file: File | undefined) {
     if (!file) return;
@@ -343,7 +392,7 @@ function MediaField({ kind }: { kind: "photo" | "resume" }) {
     startTransition(async () => {
       const res = await uploadMedia(fd);
       if (!res.ok) return setError(res.error);
-      id.onChange(res.data.fileId);
+      url.onChange(res.data.url);
       if (kind === "resume") filename.onChange(res.data.filename);
     });
   }
@@ -433,8 +482,8 @@ function MediaField({ kind }: { kind: "photo" | "resume" }) {
               e.target.value = "";
             }}
           />
-          {id.value && (
-            <button type="button" onClick={() => id.onChange(null)} className={btn.ghost}>
+          {url.value && (
+            <button type="button" onClick={() => url.onChange(null)} className={btn.ghost}>
               Use default file
             </button>
           )}

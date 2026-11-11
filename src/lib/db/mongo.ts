@@ -1,5 +1,5 @@
 import "server-only";
-import { GridFSBucket, MongoClient, type Db } from "mongodb";
+import { MongoClient, type Db } from "mongodb";
 import type { SiteContent } from "@/lib/content/schema";
 
 export type SiteDoc = {
@@ -52,6 +52,5 @@ export async function collections() {
     site: db.collection<SiteDoc>("site"),
     revisions: db.collection<RevisionDoc>("revisions"),
     loginAttempts: db.collection<LoginAttemptDoc>("login_attempts"),
-    media: new GridFSBucket(db, { bucketName: "media" }),
   };
 }
