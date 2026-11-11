@@ -28,9 +28,13 @@ export function isCloudinaryUrl(url: string) {
   }
 }
 
+/** Same-origin prefix proxied to res.cloudinary.com (see rewrites in next.config.ts). */
+export const CLOUDINARY_PROXY_PREFIX = "/cdn";
+
 /**
- * next/image loader for Cloudinary: browser requests hit the CDN directly
- * (long-lived Cache-Control), with width/format transforms in the URL.
+ * Loader for Cloudinary photos, with width/format transforms in the URL.
+ * Returns a same-origin `/cdn/...` path that next.config rewrites to Cloudinary, so the
+ * browser never talks to res.cloudinary.com directly (no third-party cookies).
  * Versioned delivery URLs stay cacheable across re-uploads of the same public id.
  */
 export function cloudinaryImageLoader({
@@ -57,7 +61,8 @@ export function cloudinaryImageLoader({
       : rest;
 
   const q = quality ?? 75;
-  return `${prefix}f_auto,q_${q},c_fill,g_auto,w_${width}/${path}`;
+  const cdnUrl = new URL(`${prefix}f_auto,q_${q},c_fill,g_auto,w_${width}/${path}`);
+  return `${CLOUDINARY_PROXY_PREFIX}${cdnUrl.pathname}`;
 }
 
 /** Absolute URL for JSON-LD / sitemap (Cloudinary links are already absolute). */

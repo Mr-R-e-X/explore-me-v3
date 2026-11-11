@@ -11,6 +11,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "font-src 'self'",
+  "manifest-src 'self'",
   "connect-src 'self' https://vitals.vercel-insights.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -25,8 +26,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     formats: ["image/avif", "image/webp"],
-    // Long TTL for /_next/image (local fallback). Cloudinary photos use the CDN loader
-    // and rely on Cloudinary's own Cache-Control instead.
+    // Long TTL for /_next/image (local fallback). Cloudinary photos go through the
+    // /cdn rewrite and rely on Cloudinary's own Cache-Control instead.
     minimumCacheTTL: 60 * 60 * 24 * 31, // 31 days
     localPatterns: [{ pathname: "/souvik.webp", search: "" }],
     remotePatterns: [
@@ -48,6 +49,18 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  async rewrites() {
+    // Serve Cloudinary photos from our own origin so browsers don't send/receive
+    // res.cloudinary.com cookies (Lighthouse "third-party cookies"). Scoped to our cloud.
+    return [
+      {
+        source: cloudinaryCloud ? `/cdn/${cloudinaryCloud}/:path*` : "/cdn/:path*",
+        destination: cloudinaryCloud
+          ? `https://res.cloudinary.com/${cloudinaryCloud}/:path*`
+          : "https://res.cloudinary.com/:path*",
+      },
+    ];
   },
   async headers() {
     return [

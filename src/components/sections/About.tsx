@@ -32,7 +32,7 @@ export function About({ title, about, profile }: Props) {
         <figure className="mx-auto mb-8 w-56 sm:float-right sm:mb-4 sm:ml-8 sm:w-52">
           <div className="bp-frame p-2">
             {cloudinary && src2x ? (
-              // eslint-disable-next-line @next/next/no-img-element -- direct CDN URLs so the browser caches Cloudinary's Cache-Control
+              // eslint-disable-next-line @next/next/no-img-element -- same-origin /cdn URLs (proxied to Cloudinary) keep Cloudinary's Cache-Control
               <img
                 src={src1x}
                 srcSet={`${src1x} 416w, ${src2x} 832w`}
