@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
+    agentUpgrade: "security",
     // Photo (2 MB) and resume (5 MB) uploads go through a Server Action.
     serverActions: { bodySizeLimit: "6mb" },
   },
